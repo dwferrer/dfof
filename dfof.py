@@ -72,25 +72,42 @@ def fof_basic_inline(x,b=.2,min_np = 8):
 
     return group_end,gid,n_friends
 
-import matplotlib.pyplot as p
 import time
 
-def test_fof(N_halos, N_field,halo_np = 50):
+def process_groups(group_ends,g_id):
+    group_ends = np.append([0],group_ends)
+    g_np = group_ends[1:]-group_ends[:-1]
+    good_ids = np.where(g_np > 1)[0]
+    idx = good_ids[np.argsort(g_np[good_ids])[::-1]]
+    remap = np.zeros(g_id.max()+1,dtype = np.int64)
+    s = np.arange(idx.shape[0],dtype=np.int64)
+    remap[idx+1] = s+1
+    np_new = np.append([0],np.sort(g_np[good_ids])[::-1])
+    return remap[g_id],np_new
+
+
+
+def gen_halos(N_halos,N_field,halo_np = 50):
     #make the field
-    x = np.random.random_sample(size = (N_field,3)) - .5
+    x = np.random.random_sample(size = (N_field,3))
 
     halos = np.random.poisson(halo_np,N_halos)
 
     for np_halo in halos:
-        scale = np.random.sample()*2.0/N_halos**(1/3)
-        center = np.random.sample((1,3)) -.5
+        scale = np.random.sample()*1.0/(N_halos*halo_np)**(1./3.)
+        center = np.random.sample((1,3))
+        print("Scale: {} | Center:{} | np: {}".format(scale,center,np_halo))
         m = np.random.sample((np_halo))+.00000001
-        r = (m**(-2/3) -1)**(-1/2)
+        r = (m**(-2./3.) -1.)**(-1./2.)
         theta = np.random.sample((np_halo)) *2*np.pi
-        phi = np.random.sample((np_halo))*np.pi
-        x_h = np.concatenate([(r*np.cos(theta)*np.cos(phi))[:,None],(r*np.sin(theta)*np.cos(phi))[:,None],(r*np.sin(phi))[:,None]],axis = 1) * scale+center
+        phi = np.arccos(2*np.random.sample((np_halo))-1)
+        x_h = np.concatenate([(r*np.cos(theta)*np.sin(phi))[:,None],(r*np.sin(theta)*np.sin(phi))[:,None],(r*np.cos(phi))[:,None]],axis = 1) * scale+center
+        x_h = np.mod(x_h,1)
         x = np.append(x,x_h,axis = 0)
+    return x - .5
 
+def test_fof(N_halos, N_field,halo_np = 50):
+    x = gen_halos(N_Halos,N_field, halo_np = 50)
     x_c = x.copy()
     start = time.clock()
     group_ends,gid,n_friends = fof_basic(x)
@@ -122,7 +139,7 @@ def test_fof(N_halos, N_field,halo_np = 50):
 
     print ("Python: Time: {} s for {} particles".format(end-start,x.shape[0]))
     print ("Inline: Time: {} s for {} particles".format(end_c-start_c,x.shape[0]))
-    return end -start,x.shape[0]
+    return x.shape[0],end-start
 
 if __name__ == "__main__":
     test_fof(1000)
