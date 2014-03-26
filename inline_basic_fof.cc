@@ -24,8 +24,8 @@ for(int i = 0; i < N; i++){{
             N_FRIENDS1(swap_idx) = temp_nf;
             swap_idx++;
         }}
-        N_FRIENDS1(i) += friends;
     }}
+    N_FRIENDS1(i) += friends;
     if(friends == 0){{
         if (i >= search_idx-1){{
             GROUP_END1(current_id) = search_idx+1;
